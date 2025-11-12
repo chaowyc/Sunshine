@@ -107,12 +107,12 @@ namespace task_pool_util {
     void pushDelayed(std::pair<__time_point, __task> &&task) {
       std::lock_guard lg(_task_mutex);
 
-      auto it = _timer_tasks.cbegin();
-      for (; it < _timer_tasks.cend(); ++it) {
-        if (std::get<0>(*it) < task.first) {
-          break;
-        }
-      }
+      // Use binary search for O(log n) insertion instead of O(n) linear scan
+      auto it = std::lower_bound(_timer_tasks.begin(), _timer_tasks.end(),
+        task.first,
+        [](const auto &a, const __time_point &b) {
+          return a.first > b;  // Reverse order: earliest time at back
+        });
 
       _timer_tasks.emplace(it, task.first, std::move(task.second));
     }
